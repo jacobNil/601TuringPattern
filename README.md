@@ -1,5 +1,5 @@
 # 601TuringPattern
-course peoject
+course project
 
 simulate the turing pattern useing golang.
 
