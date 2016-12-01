@@ -246,6 +246,7 @@ func quickUpdateScales(patterns []TuringPattern, board GameBoard) {
 	}
 }
 
+//
 func (turingScale *TuringPattern) quickUpdateScale(board GameBoard) {
 	//updateActivator, row and col
 	turingScale.updateActivatorRow(board)
