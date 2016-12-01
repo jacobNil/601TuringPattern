@@ -6,15 +6,8 @@ import (
 	"math/rand"
 )
 
-type Cell struct {
-	curr float64 // represent the current board
-	tmp  float64
-	old  float64 // represent the old board
-	diff float64 // represent the different value of the curr and the old
-}
-
 // The game board is a 2D slice of Cell objects//
-type GameBoard [][]Cell
+type GameBoard [][]float64
 
 // The game board is a 2D slice of float64//
 //type GameBoard [][]float64
@@ -120,7 +113,7 @@ func initializePatterns(patterns []TuringPattern, num, blurType, blurSteps int) 
 func createGameBoard(boardSize int) GameBoard {
 	var board GameBoard
 	for i := 0; i < boardSize; i++ {
-		boardRow := make([]Cell, boardSize)
+		boardRow := make([]float64, boardSize)
 		board = append(board, boardRow)
 	}
 	return board
@@ -132,7 +125,7 @@ func initializeBoard(board GameBoard) GameBoard {
 	cols := len(board[0])
 	for i := 0; i < rows; i++ {
 		for j := 0; j < cols; j++ {
-			board[i][j].curr = rand.Float64()*2 - 1
+			board[i][j] = rand.Float64()*2 - 1
 		}
 	}
 	return board
@@ -163,6 +156,7 @@ func main() {
 	levels := 1
 	blurType := 0
 	blurSteps := 5
+	stepNum := 100
 	//maxCount := 10000
 	//convergeThreshold := 0.01 //1
 
@@ -172,27 +166,113 @@ func main() {
 	patterns := make([]TuringPattern, 0)
 	patterns = initializePatterns(patterns, num, blurType, blurSteps)
 
-	// create the grid, with each cell{curr, tmp,  diff, old}
+	// create the grid, with each [][]float64
 	turingBoard := createGameBoard(boardSize)
 	// fill the board with random float64 in range(-1,1)
 	turingBoard = initializeBoard(turingBoard)
 
 	//diffBoardSum := 1
 
-	calculateTuringPatternBoard(patterns, turingBoard)
+	calculateTuringPatternBoard(patterns, turingBoard, stepNum)
 }
 
 // calculate the turing pattern in general
-func calculateTuringPatternBoard(patterns []TuringPattern, board GameBoard) {
+func calculateTuringPatternBoard(patterns []TuringPattern, board GameBoard, stepNum int) {
 	// update the patterns[i].activator[][] and
 	// 						inhibitor[i].inhibitor[][] for each turint scale
+	for step := 0; step < stepNum; step++ {
+		updateTuringScales(patterns, board)
+		// use patterns[i].activator[][] and inhibitor[i].inhibitor[][] to
+		//calculate variations variation=variation+abs(activator[x][y]-inhibitor[x][y])
+		updateScalesVariation(patterns, board)
+		//fmt.Println("turing Scale0=", patterns[0].variations)
+		updateBoardFromPatterns(patterns, board)
+		normalizeBoard(board)
+		fmt.Println(board)
+		drawGameBoard(board, step)
+	}
+}
 
-	updateTuringScales(patterns, board)
-	// use patterns[i].activator[][] and inhibitor[i].inhibitor[][] to
-	//calculate variations variation=variation+abs(activator[x][y]-inhibitor[x][y])
-	updateScalesVariation(patterns, board)
-	fmt.Println("turing Scale0=", patterns[0].variations)
+// normalizeBoard() scale the value on baord bacj to [-1, 1]
+func normalizeBoard(board GameBoard) {
+	rows := len(board)
+	cols := len(board[0])
+	// find the minValue and maxValue on board
+	minValue := 0.0
+	maxValue := 0.0
+	for row := 0; row < rows; row++ {
+		for col := 0; col < cols; col++ {
+			if board[row][col] < minValue {
+				minValue = board[row][col]
+			} else if board[row][col] > maxValue {
+				maxValue = board[row][col]
+			}
+		}
+	}
 
+	units := (maxValue - minValue) / 2.0
+	// compute the noemalized value
+
+	for row := 0; row < rows; row++ {
+		for col := 0; col < cols; col++ {
+			value := board[row][col]
+			value = (value-minValue)/units - 1.0
+			board[row][col] = value
+		}
+	}
+}
+
+// update grid board[row][col] from the patterns[i].variations[row][col]
+// 1. Find which of the scales has the smallest variation value.
+//    ie find which scale has the lowest variation[x,y,scalenum] value and call this bestvariation
+//2. Using the scale with the smallest variation, update the grid value
+//if activator[row][col][bestvariationscale]>inhibitor[row][col][bestvariationscale]>
+//then grid[row][col]:=grid[row][co]+smallamounts[bestvariation]
+//else grid[row][co]:=grid[row][co]-smallamounts[bestvariation]
+//
+func updateBoardFromPatterns(patterns []TuringPattern, board GameBoard) {
+	rows := len(board)
+	cols := len(board[0])
+
+	for row := 0; row < rows; row++ {
+		for col := 0; col < cols; col++ {
+			board[row][col] += bestVariationFromPatterns(row, col, patterns)
+		}
+	}
+}
+
+//if activator[row][col][bestvariationscale]>inhibitor[row][col][bestvariationscale]>
+//then return: +smallamounts[bestvariation]
+//else return: -smallamounts[bestvariation]
+//the return value should include sign(positive negative)
+func bestVariationFromPatterns(row, col int, patterns []TuringPattern) float64 {
+	scaleNums := len(patterns)
+	// assume the patterns[0] is the best turing scale
+	bestScale := 0
+	sign := 1.0
+	inhibitor := patterns[bestScale].inhibitor[row][col]
+	activator := patterns[bestScale].activator[row][col]
+	if inhibitor < activator {
+		sign = -1.0
+	} else {
+		sign = 1.0
+	}
+	bestVariation := patterns[bestScale].variations[row][col]
+	// loop throught all scale to find the actual best and return
+	for i := 0; i < scaleNums; i++ {
+		if patterns[i].variations[row][col] < bestVariation {
+			bestVariation = patterns[i].variations[row][col]
+			bestScale = i
+			inhibitor = patterns[bestScale].inhibitor[row][col]
+			activator = patterns[bestScale].activator[row][col]
+			if inhibitor > activator {
+				sign = -1.0
+			} else {
+				sign = 1.0
+			}
+		}
+	}
+	return bestVariation * sign
 }
 
 // use patterns[i].activator[][] and inhibitor[i].inhibitor[][] to
@@ -267,7 +347,7 @@ func (turingScale *TuringPattern) updateInhibitorRow(board GameBoard) {
 			sum := 0.0
 			for i := row - actR; i < row+actR; i++ {
 				currRow := (i + rows) % rows
-				sum += board[currRow][col].curr
+				sum += board[currRow][col]
 			}
 			turingScale.inhibitor[row][col] = sum / float64(actR*2+1)
 		}
@@ -285,7 +365,7 @@ func (turingScale *TuringPattern) updateInhibitorCol(board GameBoard) {
 			sum := 0.0
 			for j := col - actR; j < col+actR; j++ {
 				currCol := (j + cols) % cols
-				sum += board[row][currCol].curr
+				sum += board[row][currCol]
 			}
 			turingScale.inhibitor[row][col] =
 				(turingScale.inhibitor[row][col] + sum/float64(actR*2+1)) / 2.0
@@ -305,7 +385,7 @@ func (turingScale *TuringPattern) updateActivatorRow(board GameBoard) {
 			sum := 0.0
 			for i := row - actR; i < row+actR; i++ {
 				currRow := (i + rows) % rows
-				sum += board[currRow][col].curr
+				sum += board[currRow][col]
 			}
 			turingScale.activator[row][col] = sum / float64(actR*2+1)
 		}
@@ -323,7 +403,7 @@ func (turingScale *TuringPattern) updateActivatorCol(board GameBoard) {
 			sum := 0.0
 			for j := col - actR; j < col+actR; j++ {
 				currCol := (j + cols) % cols
-				sum += board[row][currCol].curr
+				sum += board[row][currCol]
 			}
 			turingScale.activator[row][col] =
 				(turingScale.activator[row][col] + sum/float64(actR*2+1)) / 2.0
@@ -341,26 +421,21 @@ func inField(board GameBoard, i, j int) bool {
 }
 
 // draw the current board state, save the result as .png
-func drawGameBoard(board GameBoard) /*image.Image */ {
+func drawGameBoard(board GameBoard, step int) /*image.Image */ {
 	rows, cols := len(board), len(board[0])
-	rowHeight, colWidth := 6.0, 6.0
+	rowHeight, colWidth := 2.0, 2.0
 	width, height := int(colWidth)*cols, int(rowHeight)*rows
 	boardCanvas := CreateNewCanvas(width, height)
-	myRed := MakeColor(255, 0, 0)
-	myBlue := MakeColor(0, 0, 255)
 	for row := 0; row < rows; row++ {
 		for col := 0; col < cols; col++ {
-			if board[row][col].curr != 0.0 {
-				// if cooperate, blue cell
-				boardCanvas.SetFillColor(myBlue)
-			} else if board[row][col].curr != 0.0 {
-				// if defect, red cell
-				boardCanvas.SetFillColor(myRed)
-			}
+			var greyScale uint8 = uint8((board[row][col] + 1.0) * 256.0)
+			currColor := MakeColor(greyScale, greyScale, greyScale)
+			boardCanvas.SetFillColor(currColor)
 			drawCell(boardCanvas, row, col, rowHeight, colWidth)
 		}
 	}
-	boardCanvas.SaveToPNG("Prisoners.png")
+	name := fmt.Sprintf("TuringPatternStep %d.png", step)
+	boardCanvas.SaveToPNG(name)
 	//return prison.img
 }
 
