@@ -197,6 +197,8 @@ func calculateTuringPatternBoard(patterns []TuringPattern, board GameBoard) {
 
 // use patterns[i].activator[][] and inhibitor[i].inhibitor[][] to
 //calculate variations variation=variation+abs(activator[x][y]-inhibitor[x][y])
+// patterns[i].variationSampleR should be used as the range of sample
+// patterns[i].variationSampleR = 1 by default
 func updateScalesVariation(patterns []TuringPattern, board GameBoard) {
 	// loop through all the scales of turing pattern and calculate
 	//variation=variation+abs(activator[x][y]-inhibitor[x][y])
@@ -219,7 +221,6 @@ func updateTuringScales(patterns []TuringPattern, board GameBoard) {
 	//0--> fast mode;
 	//1--> accurate mode;
 	//2-->gussian mode(slow)
-
 	switch patterns[0].updateType {
 	case 0:
 		quickUpdateScales(patterns, board)
