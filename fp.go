@@ -147,13 +147,18 @@ func updateBlurStepsAndLevels(blurSteps, levels int) (int, int) {
 }
 
 // readParameters() get input fron terminal
-func readParameters() (int, int, int, int) {
+func readParameters() (int, int, int, int, int) {
 	// get parameters
 	parameters := os.Args
-	if parameters == nil || len(parameters) != 5 {
-		fmt.Println("Error: 4 parameters are wanted.")
-		fmt.Println("Please Input 4 number to represent: ")
-		fmt.Println("1) imageSize(ie, 256); 2) updateType(ie, 0->fast; 1->rectangle; 2->circle); 3)step Number(ex. 100); 4)turing Scale Num(less than 5)")
+	if parameters == nil || len(parameters) != 6 {
+		fmt.Println("Error: 5 parameters are wanted.")
+		fmt.Println("Please Input 5 number to represent: ")
+		fmt.Println("1) imageSize(ie, 256)")
+		fmt.Println("2) updateType(ie, 0->fast; 1->rectangle; 2->circle)")
+		fmt.Println("3) step Number(ex. 100)")
+		fmt.Println("4) turing Scale Num(less than 5)")
+		fmt.Println("5) draw period")
+
 		fmt.Println("Please refer readMe.txt if have more question.")
 		os.Exit(1)
 	}
@@ -162,6 +167,7 @@ func readParameters() (int, int, int, int) {
 	blurType, err2 := strconv.Atoi(parameters[2])
 	stepNum, err3 := strconv.Atoi(parameters[3])
 	scaleNum, err4 := strconv.Atoi(parameters[4])
+	drawPeriod, err5 := strconv.Atoi(parameters[5])
 	// see if there is any illegal input
 	if err1 != nil || boardSize < 0 {
 		fmt.Println("Error: something wrong with image size you input.")
@@ -170,7 +176,8 @@ func readParameters() (int, int, int, int) {
 	}
 	if err2 != nil || blurType < 0 || blurType > 2 {
 		fmt.Println("Error: something wrong with blurType you input.")
-		fmt.Println("1) imageSize(ie, 256); 2) updateType(ie, 0->fast; 1->rectangle; 2->circle); 3)step Number(ex. 100); 4)turing Scale Num(less than 5)")
+		fmt.Println("The blurType can be 0, 1 or 2")
+		fmt.Println("Type(ie, 0->fast; 1->rectangle; 2->circle); 3)step Number(ex. 100); 4)turing Scale Num(less than 5)")
 		os.Exit(1)
 	}
 	if err3 != nil || stepNum < 0 {
@@ -183,7 +190,12 @@ func readParameters() (int, int, int, int) {
 		fmt.Println("input a number in range of (20, 100)")
 		os.Exit(1)
 	}
-	return boardSize, blurType, stepNum, scaleNum
+	if err5 != nil || scaleNum < 0 {
+		fmt.Println("Error: something wrong with the drawperiod")
+		fmt.Println("input a positive integer to represent the draw period you want")
+		os.Exit(1)
+	}
+	return boardSize, blurType, stepNum, scaleNum, drawPeriod
 }
 
 // update grid board[row][col] from the patterns[i].variations[row][col]
@@ -350,12 +362,12 @@ func rectUpdateScales(patterns []TuringPattern, board GameBoard) {
 
 func (turingScale *TuringPattern) rectUpdateScale(board GameBoard) {
 	//updateActivator, row and col
-	rectUpdateIngredient(turingScale.activator, turingScale.activatorRX, board)
+	rectUpdateIngredient(turingScale.activator, board, turingScale.activatorRX)
 	//update Inhibitor, row and col
-	rectUpdateIngredient(turingScale.inhibitor, turingScale.inhibitorRX, board)
+	rectUpdateIngredient(turingScale.inhibitor, board, turingScale.inhibitorRX)
 }
 
-func rectUpdateIngredient(ingredient [][]float64, radius int, board GameBoard) {
+func rectUpdateIngredient(ingredient, board GameBoard, radius int) {
 	// get board dimenstions
 	rows := len(ingredient)
 	cols := len(ingredient[0])
@@ -522,7 +534,7 @@ func normalizeBoard(board GameBoard) {
 func main() {
 	// set up many variables
 	// blurType(update method) and stepNum and boardSize should be get from command line input
-	boardSize, blurType, stepNum, scaleNum := readParameters()
+	boardSize, blurType, stepNum, scaleNum, drawPeriod := readParameters()
 	num := boardSize
 	levels := 1
 	blurSteps := 5
@@ -537,11 +549,11 @@ func main() {
 	// fill the board with random float64 in range(-1,1)
 	turingBoard = initializeBoard(turingBoard)
 	//diffBoardSum := 1
-	calculateTuringPatternBoard(patterns, turingBoard, stepNum)
+	calculateTuringPatternBoard(patterns, turingBoard, stepNum, drawPeriod)
 }
 
 // calculate the turing pattern in general
-func calculateTuringPatternBoard(patterns []TuringPattern, board GameBoard, stepNum int) {
+func calculateTuringPatternBoard(patterns []TuringPattern, board GameBoard, stepNum, drawPeriod int) {
 	// update the patterns[i].activator[][] and
 	// 						inhibitor[i].inhibitor[][] for each turint scale
 	var imglist []image.Image
@@ -555,13 +567,16 @@ func calculateTuringPatternBoard(patterns []TuringPattern, board GameBoard, step
 		updateBoardFromPatterns(patterns, board)
 		normalizeBoard(board)
 		//fmt.Println(board)
-
-		if step%1 == 0 {
+		// draw one image or add one image to gif at in the period of draw period
+		if step%drawPeriod == 0 {
 			image := drawGameBoard(board, step)
 			imglist = append(imglist, image)
 		}
 	}
-	imageName := fmt.Sprintf("TuringPattern%dStep%dSize.png", stepNum, len(board))
+	// produce and concantnate the string for file name
+	// the final format will be like "TuringPatternTotal20Step100SizeatEvery2steps.out.gif"
+	imageName := fmt.Sprintf("TuringPatternTotal%dStep%dSizeatEvery%dsteps",
+		stepNum, len(board), drawPeriod)
 	process(imglist, imageName)
 	fmt.Println("gif wrote")
 }
@@ -581,8 +596,8 @@ func drawGameBoard(board GameBoard, step int) image.Image {
 		}
 	}
 	// save picture
-	name := fmt.Sprintf("TuringPatternStep %d.png", step)
-	boardCanvas.SaveToPNG(name)
+	//name := fmt.Sprintf("TuringPatternStep %d.png", step)
+	//boardCanvas.SaveToPNG(name)
 
 	return boardCanvas.img
 }
