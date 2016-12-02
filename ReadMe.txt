@@ -22,10 +22,10 @@ of the fp.go file
   output pattern in image.
 
   examples:
-      1)  ./fp 512 0 20 5
-      2)  ./fp 512 1 20 4
-      3)  ./fp 1024 0 20 4
-      4)  ./fp 512 2 20 4
+      1)  ./fp 512 0 20 5 10
+      2)  ./fp 512 1 20 4 10
+      3)  ./fp 1024 0 20 4 2
+      4)  ./fp 512 2 20 4 2
 
 
 3)The meaning of the argument
@@ -66,3 +66,8 @@ of the fp.go file
                 in the code(kind of hardcoded). The more scales you use, the more time
                 will be needed to run the code, because during update of each cell, a
                 more layer of turing scale need to be calculated.
+
+
+      drawPeriod: An int representing the interval of drawing. For example, an input
+                  of 20 means you want to draw one image or add one scene to the final .gif
+                  every 20 steps
