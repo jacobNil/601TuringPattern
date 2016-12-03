@@ -10,22 +10,28 @@ How to Run:
 The drawing module of go: 1) canvas.go; 2)gifhelper.go should be in the same folder
 of the fp.go file
 
+
 2 How to run and format of command line input
   1) set GOPATH
   2) cd to the folder containing the fp.go file
   3) build first--> go build
   4) run:
-    The format of input is:   ./fp imageSize blurType stepNumber ScaleNumber
-                             (./fp and 4 int)
+    The format of input is:   ./fp imageSize blurType stepNumber ScaleNumber drawPeriod
+                             (./fp and 5 int)
 
   There are some input examples, which are suggested for play around and see the
-  output pattern in image.
+  output pattern in image. During the running, the program will print step number
+  which can save you some anxiety and thinking about the halting problem (which has
+  been proved to be unsolvalble!)
 
   examples:
-      1)  ./fp 512 0 20 5 10
-      2)  ./fp 512 1 20 4 10
-      3)  ./fp 1024 0 20 4 2
-      4)  ./fp 512 2 20 4 2
+      1)  ./fp 400 0 20 3 2    (simple mode with unstable pattern, very quick)
+      2)  ./fp 200 0 800 3 20  (simple mode with final stable pattern, might need several minutes)
+      3)  ./fp 300 2 50 3 5    (slower but with multiscale patterns, need several minutes )
+      4)  ./fp 300 1 20 4 2    (rectangle mode with a little weird stable pattern
+                                need almost 10 minutes)
+      5)  ./fp 400 2 200 3 10  (slower mode with nice large patterns. need 30+ minutes)
+
 
 
 3)The meaning of the argument

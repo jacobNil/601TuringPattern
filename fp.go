@@ -9,9 +9,10 @@ import (
 	"strconv"
 )
 
-// The game board is a 2D slice of Cell objects//
+// GameBoard: The game board is a 2D slice of Cell objects//
 type GameBoard [][]float64
 
+// TuringPattern represent different Turing Scale
 type TuringPattern struct {
 	activator                GameBoard
 	inhibitor                GameBoard
@@ -64,30 +65,40 @@ func initializePatterns(patterns []TuringPattern, num, blurType, blurSteps, numO
 	pattern4.initializeTuringPattern(num, 100, 100,
 		200, 200, 1, blurType, blurSteps, 0.5)
 
+	//pattern4.initializeTuringPattern(num, 70, 70,
+	//	200, 200, 1, blurType, blurSteps, 0.5)
+
 	var pattern3 TuringPattern
 	//      initializeTuringPattern(num, aRX, aRY,
 	//iRX, iRY, vSR, blurType, blurSteps int, stepSize float64)
 	pattern3.initializeTuringPattern(num, 20, 20,
 		40, 40, 1, blurType, blurSteps, 0.4)
+	//pattern3.initializeTuringPattern(num, 20, 20,
+	//	60, 60, 1, blurType, blurSteps, 0.4)
 
 	var pattern2 TuringPattern
 	//      initializeTuringPattern(num, aRX, aRY,
 	//iRX, iRY, vSR, blurType, blurSteps int, stepSize float64)
 	pattern2.initializeTuringPattern(num, 10, 10,
 		20, 20, 1, blurType, blurSteps, 0.3)
+	//pattern2.initializeTuringPattern(num, 10, 10,
+	//	30, 30, 1, blurType, blurSteps, 0.3)
 
 	var pattern1 TuringPattern
 	//      initializeTuringPattern(num, aRX, aRY,
 	//iRX, iRY, vSR, blurType, blurSteps int, stepSize float64)
 	pattern1.initializeTuringPattern(num, 5, 5,
 		10, 10, 1, blurType, blurSteps, 0.2)
+	//pattern1.initializeTuringPattern(num, 5, 5,
+	//15, 15, 1, blurType, blurSteps, 0.2)
 
 	var pattern0 TuringPattern
 	//      initializeTuringPattern(num, aRX, aRY,
 	//iRX, iRY, vSR, blurType, blurSteps int, stepSize float64)
-	pattern0.initializeTuringPattern(num, 2, 2,
-		4, 4, 1, blurType, blurSteps, 0.1)
-
+	pattern0.initializeTuringPattern(num, 1, 1,
+		2, 2, 1, blurType, blurSteps, 0.1)
+	//pattern0.initializeTuringPattern(num, 1, 1,
+	//	3, 3, 1, blurType, blurSteps, 0.1)
 	for i := 0; i < numOfPatterns; i++ {
 		switch i {
 		case 0:
@@ -108,6 +119,7 @@ func initializePatterns(patterns []TuringPattern, num, blurType, blurSteps, numO
 // create gameboard type board, with size boardSize*boardSize
 func createGameBoard(boardSize int) GameBoard {
 	var board GameBoard
+	// need to create each board row
 	for i := 0; i < boardSize; i++ {
 		boardRow := make([]float64, boardSize)
 		board = append(board, boardRow)
@@ -200,7 +212,7 @@ func readParameters() (int, int, int, int, int) {
 
 // update grid board[row][col] from the patterns[i].variations[row][col]
 // 1. Find which of the scales has the smallest variation value.
-//    ie find which scale has the lowest variation[x,y,scalenum] value and call this bestvariation
+//ie find which scale has the lowest variation[x,y,scalenum] value and call this bestvariation
 //2. Using the scale with the smallest variation, update the grid value
 //if activator[row][col][bestvariationscale]>inhibitor[row][col][bestvariationscale]>
 //then grid[row][col]:=grid[row][co]+smallamounts[bestvariation]
@@ -218,8 +230,7 @@ func updateBoardFromPatterns(patterns []TuringPattern, board GameBoard) {
 }
 
 //if activator[row][col][bestvariationscale]>inhibitor[row][col][bestvariationscale]>
-//then return: +smallamounts[bestvariation]
-//else return: -smallamounts[bestvariation]
+//then return: +smallamounts[bestvariation]； else return: -smallamounts[bestvariation]
 //the return value should include sign(positive negative)
 func bestVariationFromPatterns(row, col int, patterns []TuringPattern) float64 {
 	scaleNums := len(patterns)
@@ -304,17 +315,19 @@ func circleUpdateScales(patterns []TuringPattern, board GameBoard) {
 	}
 }
 
+// circleUpdateScale
+// udpate the board[row][col] from the value (row-R, col-R, cow+R, col+R)
 func (turingScale *TuringPattern) circleUpdateScale(board GameBoard) {
 	//updateActivator, row and col
-	circleUpdateIngredient(turingScale.activator, turingScale.activatorRX, board)
+	circleUpdateActivator(turingScale.activator, turingScale.activatorRX, board)
 	//update Inhibitor, row and col
-	circleUpdateIngredient(turingScale.inhibitor, turingScale.inhibitorRX, board)
+	circleUpdateInhibitor(turingScale.inhibitor, turingScale.inhibitorRX, board)
 }
 
-func circleUpdateIngredient(ingredient [][]float64, radius int, board GameBoard) {
-	rows := len(ingredient)
-	cols := len(ingredient[0])
-
+func circleUpdateActivator(ingredient [][]float64, radius int, board GameBoard) {
+	rows := len(board)
+	cols := len(board[0])
+	//fmt.Println("here!", rows, cols)
 	for row := 0; row < rows; row++ {
 		for col := 0; col < cols; col++ {
 			sum := 0.0
@@ -322,30 +335,94 @@ func circleUpdateIngredient(ingredient [][]float64, radius int, board GameBoard)
 			// use the (row-R, col-R, cow+R, col+R) as the outer range
 			// of calculate ingredient[row][col]
 			for i := row - radius; i < row+radius; i++ {
-				for j := col - radius; j < col+radius; j++ {
-					// use the specific range to find if the cell is
-					// in circiel (row, col) with Radius
-					if ((i-row)*(i-row) + (j-col)*(j-col)) < radius*radius {
-						currRow := (i + rows) % rows
-						currCol := (j + cols) % cols
-						for currRow < 0 {
-							currRow += rows
+				if i >= 0 && i < rows {
+					for j := col - radius; j < col+radius; j++ {
+						if j >= 0 && j < cols {
+							// use the specific range to find if the cell is
+							// in circiel (row, col) with Radius
+
+							if ((i-row)*(i-row) + (j-col)*(j-col)) < radius*radius {
+								// for wrap around
+								currRow := (i + rows) % rows
+								currCol := (j + cols) % cols
+								for currRow < 0 {
+									currRow += rows
+								}
+								for currCol < 0 {
+									currCol += cols
+								}
+								//fmt.Println("radius=", radius)
+								//fmt.Println("i, j=", i, j)
+								//fmt.Println("currRow currCol=", currRow, currCol)
+								//fmt.Println("Rows Cols=", rows, cols)
+
+								sum += board[i][j]
+								count++
+							}
 						}
-						for currCol < 0 {
-							currCol += cols
-						}
-						//fmt.Println("radius=", radius)
-						//fmt.Println("i, j=", i, j)
-						//fmt.Println("currRow currCol=", currRow, currCol)
-						//fmt.Println("Rows Cols=", rows, cols)
-						//sum += board[currRow][currCol]
-						count++
 					}
 				}
 			}
 			ingredient[row][col] = sum / float64(count)
+			//fmt.Println("ingredient=", ingredient[row][col])
 		}
 	}
+}
+
+func circleUpdateInhibitor(ingredient [][]float64, radius int, board GameBoard) {
+	rows := len(board)
+	cols := len(board[0])
+	//fmt.Println("here!", rows, cols)
+	for row := 0; row < rows; row++ {
+		for col := 0; col < cols; col++ {
+			sum := 0.0
+			count := 0
+
+			// use the (row-R, col-R, cow+R, col+R) as the outer range
+			// of calculate ingredient[row][col]
+			for i := row - radius; i < row+radius; i++ {
+				if i >= 0 && i < rows {
+					for j := col - radius; j < col+radius; j++ {
+						if j >= 0 && j < cols {
+							// use the specific range to find if the cell is
+							// in circiel (row, col) with Radius
+
+							if ((i-row)*(i-row) + (j-col)*(j-col)) < radius*radius {
+								// for wrap around
+								currRow := (i + rows) % rows
+								currCol := (j + cols) % cols
+								for currRow < 0 {
+									currRow += rows
+								}
+								for currCol < 0 {
+									currCol += cols
+								}
+								//fmt.Println("radius=", radius)
+								//fmt.Println("i, j=", i, j)
+								//fmt.Println("currRow currCol=", currRow, currCol)
+								//fmt.Println("Rows Cols=", rows, cols)
+
+								sum += board[i][j]
+								count++
+							}
+						}
+					}
+				}
+			}
+			ingredient[row][col] = sum / float64(count)
+			//fmt.Println("ingredient=", ingredient[row][col])
+		}
+	}
+}
+
+// check if (i, j) is legal cell coordinate on board
+func onBoard(i, j int, board GameBoard) bool {
+	rows := len(board)
+	cols := len(board[0])
+	if (i >= 0) && (j >= 0) && (i < rows) && (j < cols) {
+		return true
+	}
+	return false
 }
 
 ///////////////////////////////////////////////////////////////////////
@@ -362,12 +439,39 @@ func rectUpdateScales(patterns []TuringPattern, board GameBoard) {
 
 func (turingScale *TuringPattern) rectUpdateScale(board GameBoard) {
 	//updateActivator, row and col
-	rectUpdateIngredient(turingScale.activator, board, turingScale.activatorRX)
+	rectUpdateActivator(turingScale.activator, board, turingScale.activatorRX)
 	//update Inhibitor, row and col
-	rectUpdateIngredient(turingScale.inhibitor, board, turingScale.inhibitorRX)
+	rectUpdateInhibitor(turingScale.inhibitor, board, turingScale.inhibitorRX)
 }
 
-func rectUpdateIngredient(ingredient, board GameBoard, radius int) {
+// udpate activator[][] in recttnagle way
+func rectUpdateActivator(ingredient, board GameBoard, radius int) {
+	// get board dimenstions
+	rows := len(ingredient)
+	cols := len(ingredient[0])
+	// use the (row-R, col-R, cow+R, col+R) as the scope of calculate ingredient[row][col]
+	for row := 0; row < rows; row++ {
+		for col := 0; col < cols; col++ {
+			sum := 0.0
+			count := 0
+			for i := row - radius; i < row+radius; i++ {
+				for j := col - radius; j < col+radius; j++ {
+					// no wrap around for this mode
+					if i >= 0 && j >= 0 && i < rows && j < cols {
+						currRow := (i + rows) % rows
+						currCol := (j + cols) % cols
+						sum += board[currRow][currCol]
+						count++
+					}
+				}
+				ingredient[row][col] = sum / float64(count)
+			}
+		}
+	}
+}
+
+// udpate inhibitor[][] in recttnagle way
+func rectUpdateInhibitor(ingredient, board GameBoard, radius int) {
 	// get board dimenstions
 	rows := len(ingredient)
 	cols := len(ingredient[0])
@@ -379,7 +483,7 @@ func rectUpdateIngredient(ingredient, board GameBoard, radius int) {
 			for i := row - radius; i < row+radius; i++ {
 				for j := col - radius; j < col+radius; j++ {
 					currRow := (i + rows) % rows
-					currCol := (i + cols) % cols
+					currCol := (j + cols) % cols
 					sum += board[currRow][currCol]
 					count++
 				}
@@ -400,7 +504,7 @@ func quickUpdateScales(patterns []TuringPattern, board GameBoard) {
 	}
 }
 
-//
+// only use the the cell in range (row-R, row+r) and (col-R, col+R)
 func (turingScale *TuringPattern) quickUpdateScale(board GameBoard) {
 	//updateActivator, row and col
 	turingScale.updateActivatorRow(board)
@@ -509,17 +613,9 @@ func normalizeBoard(board GameBoard) {
 	rows := len(board)
 	cols := len(board[0])
 	// find the minValue and maxValue on board
-	minValue := 0.0
-	maxValue := 0.0
-	for row := 0; row < rows; row++ {
-		for col := 0; col < cols; col++ {
-			if board[row][col] < minValue {
-				minValue = board[row][col]
-			} else if board[row][col] > maxValue {
-				maxValue = board[row][col]
-			}
-		}
-	}
+	minValue := minOfBoard(board)
+	maxValue := maxOfBoard(board)
+
 	units := (maxValue - minValue) / 2.0
 	// compute the noemalized value
 	for row := 0; row < rows; row++ {
@@ -529,6 +625,38 @@ func normalizeBoard(board GameBoard) {
 			board[row][col] = value
 		}
 	}
+}
+
+// find the max value on board
+func maxOfBoard(board GameBoard) float64 {
+	rows := len(board)
+	cols := len(board[0])
+	//maxValue on board
+	maxValue := 0.0
+	for row := 0; row < rows; row++ {
+		for col := 0; col < cols; col++ {
+			if board[row][col] > maxValue {
+				maxValue = board[row][col]
+			}
+		}
+	}
+	return maxValue
+}
+
+// find the min value on board
+func minOfBoard(board GameBoard) float64 {
+	rows := len(board)
+	cols := len(board[0])
+	//maxValue on board
+	minValue := 0.0
+	for row := 0; row < rows; row++ {
+		for col := 0; col < cols; col++ {
+			if board[row][col] < minValue {
+				minValue = board[row][col]
+			}
+		}
+	}
+	return minValue
 }
 
 func main() {
@@ -563,10 +691,8 @@ func calculateTuringPatternBoard(patterns []TuringPattern, board GameBoard, step
 		// use patterns[i].activator[][] and inhibitor[i].inhibitor[][] to
 		//calculate variations variation=variation+abs(activator[x][y]-inhibitor[x][y])
 		updateScalesVariation(patterns, board)
-		//fmt.Println("turing Scale0=", patterns[0].variations)
 		updateBoardFromPatterns(patterns, board)
 		normalizeBoard(board)
-		//fmt.Println(board)
 		// draw one image or add one image to gif at in the period of draw period
 		if step%drawPeriod == 0 {
 			image := drawGameBoard(board, step)
@@ -583,13 +709,22 @@ func calculateTuringPatternBoard(patterns []TuringPattern, board GameBoard, step
 
 // draw the current board state, save the result as .png
 func drawGameBoard(board GameBoard, step int) image.Image {
-	rows, cols := len(board), len(board[0])
-	rowHeight, colWidth := 1.0, 1.0
-	width, height := int(colWidth)*cols, int(rowHeight)*rows
+	rows := len(board)
+	cols := len(board[0])
+	rowHeight := 1.0
+	colWidth := 1.0
+	//rowHeight := 2.0
+	//colWidth := 2.0
+	width := int(colWidth) * cols
+	height := int(rowHeight) * rows
+	// create a canvas
 	boardCanvas := CreateNewCanvas(width, height)
+	// draw
 	for row := 0; row < rows; row++ {
 		for col := 0; col < cols; col++ {
-			var greyScale uint8 = uint8((board[row][col] + 1.0) * 256.0)
+			// calculate the grey image
+			// can also use color inage
+			var greyScale = uint8((board[row][col] + 1.0) * 256.0)
 			currColor := MakeColor(greyScale, greyScale, greyScale)
 			boardCanvas.SetFillColor(currColor)
 			drawCell(boardCanvas, row, col, rowHeight, colWidth)
@@ -598,13 +733,17 @@ func drawGameBoard(board GameBoard, step int) image.Image {
 	// save picture
 	//name := fmt.Sprintf("TuringPatternStep %d.png", step)
 	//boardCanvas.SaveToPNG(name)
-
 	return boardCanvas.img
 }
 
+// draw cell
 func drawCell(b Canvas, r, c int, h, w float64) {
-	x1, y1 := float64(r)*h, float64(c)*w
-	x2, y2 := float64(r+1)*h, float64(c+1)*w
+	// get data
+	x1 := float64(r) * h
+	y1 := float64(c) * w
+	x2 := float64(r+1) * h
+	y2 := float64(c+1) * w
+	// start to draw
 	b.MoveTo(x1, y1)
 	b.LineTo(x1, y2)
 	b.LineTo(x2, y2)
