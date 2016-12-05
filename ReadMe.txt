@@ -24,13 +24,17 @@ of the fp.go file
   which can save you some anxiety and thinking about the halting problem (which has
   been proved to be unsolvalble!)
 
-  examples:
-      1)  ./fp 400 0 20 3 2    (simple mode with unstable pattern, very quick)
-      2)  ./fp 200 0 800 3 20  (simple mode with final stable pattern, might need several minutes)
-      3)  ./fp 300 2 50 3 5    (slower but with multiscale patterns, need several minutes )
+  some worked examples:
+      1)  ./fp
+           1.txt    (simple mode with unstable pattern, very quick)
+      2)  ./fp 200 0 800 3 20
+           2.txt     (simple mode with final stable pattern, might need several minutes)
+      3)  ./fp 300 2 50 3 5
+           3.txt   (slower but with multiscale patterns, need several minutes )
       4)  ./fp 300 1 20 4 2    (rectangle mode with a little weird stable pattern
-                                need almost 10 minutes)
+           4.txt                      need almost 10 minutes)
       5)  ./fp 400 2 200 3 10  (slower mode with nice large patterns. need 30+ minutes)
+           5.txt
 
 
 
