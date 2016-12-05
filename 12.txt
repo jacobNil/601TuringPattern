@@ -1,0 +1,10 @@
+100 2 501 3 20 3.2
+
+
+
+1)imagesize
+2)update method 0 —>quick 1—>rectangle 2—> circle
+3)step number
+4)scale number used
+5)draw every %d steps
+6)Inhibitor Activator ratio
